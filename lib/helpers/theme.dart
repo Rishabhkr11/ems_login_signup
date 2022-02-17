@@ -17,8 +17,8 @@ ThemeData themeData(BuildContext context){
             fontStyle: FontStyle.italic,
           ),
           bodyText1: GoogleFonts.openSans(
-            color: Colors.black,
-            fontSize: 14,
+            color: Colors.red,
+            fontSize: 20,
           )
       )
   );

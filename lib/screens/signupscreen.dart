@@ -1,7 +1,19 @@
+import 'dart:io';
+import 'dart:math';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ems_login_signup/screens/homescreen.dart';
+import 'package:ems_login_signup/screens/signinscreen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:ems_login_signup/helpers/theme.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:ems_login_signup/models/model.dart';
 
 import '../helpers/colors.dart';
 
@@ -15,9 +27,34 @@ class SignUp extends StatefulWidget {
 class _SignUpState extends State<SignUp> {
   final List<String> _genderItems = <String>["Male", "Female"];
   String? _selectedGender;
+  bool _obscureText1 = true;
+  bool _obscureText2 = true;
+  final FirebaseStorage firebaseStorage = FirebaseStorage.instance;
+  final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
+  final formKey = GlobalKey<FormState>();
+  String? imageUrl;
+  String? errorMessage;
+
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController confirmPasswordController = TextEditingController();
+
+  hidePassword() {
+    setState(() {
+      _obscureText1 = !_obscureText1;
+    });
+  }
+
+  hideConfirmPassword() {
+    setState(() {
+      _obscureText2 = !_obscureText2;
+    });
+  }
 
   String? get selectedGender => _selectedGender;
-  set selectedGender(String? item){
+
+  set selectedGender(String? item) {
     setState(() {
       _selectedGender = item;
       print(selectedGender);
@@ -37,12 +74,20 @@ class _SignUpState extends State<SignUp> {
               child: UserImage(context),
             ),
             Form(
+              key: formKey,
               child: Column(
                 children: [
                   Container(
-                    width: MediaQuery.of(context).size.width * 0.6,
+                    width: MediaQuery
+                        .of(context)
+                        .size
+                        .width * 0.6,
                     child: TextFormField(
+                      controller: nameController,
                       keyboardType: TextInputType.text,
+                      onSaved: (value) {
+                        nameController.text = value!;
+                      },
                       decoration: InputDecoration(
                         prefixIcon: Icon(Icons.person),
                         hintText: "Name",
@@ -53,9 +98,16 @@ class _SignUpState extends State<SignUp> {
                     height: 10,
                   ),
                   Container(
-                    width: MediaQuery.of(context).size.width * 0.6,
+                    width: MediaQuery
+                        .of(context)
+                        .size
+                        .width * 0.6,
                     child: TextFormField(
+                      controller: emailController,
                       keyboardType: TextInputType.emailAddress,
+                      onSaved: (value) {
+                        emailController.text = value!;
+                      },
                       decoration: InputDecoration(
                         prefixIcon: Icon(Icons.email_outlined),
                         hintText: "Email Address",
@@ -66,18 +118,23 @@ class _SignUpState extends State<SignUp> {
                     height: 10,
                   ),
                   Container(
-                    width: MediaQuery.of(context).size.width * 0.6,
+                    width: MediaQuery
+                        .of(context)
+                        .size
+                        .width * 0.6,
                     child: DropdownButton(
                       value: selectedGender,
                       isExpanded: true,
+                      icon: Icon(Icons.person),
                       underline: Container(),
                       hint: Text('Select Gender'),
                       items: _genderItems
                           .map<DropdownMenuItem<String>>(
-                              (e) => DropdownMenuItem<String>(
-                                    value: e,
-                                    child: Text(e),
-                                  ))
+                              (e) =>
+                              DropdownMenuItem<String>(
+                                value: e,
+                                child: Text(e),
+                              ))
                           .toList(),
                       onChanged: (dynamic value) => selectedGender = value,
                     ),
@@ -86,12 +143,26 @@ class _SignUpState extends State<SignUp> {
                     height: 10,
                   ),
                   Container(
-                    width: MediaQuery.of(context).size.width * 0.6,
+                    width: MediaQuery
+                        .of(context)
+                        .size
+                        .width * 0.6,
                     child: TextFormField(
                       keyboardType: TextInputType.text,
-                      obscureText: true,
+                      obscureText: _obscureText1,
+                      controller: passwordController,
+                      onSaved: (value) {
+                        passwordController.text = value!;
+                      },
                       decoration: InputDecoration(
-                        prefixIcon: Icon(Icons.lock),
+                        prefixIcon: IconButton(
+                          icon: Icon(_obscureText1
+                              ? Icons.visibility_off
+                              : Icons.visibility),
+                          onPressed: () {
+                            hidePassword();
+                          },
+                        ),
                         hintText: "Password",
                       ),
                     ),
@@ -100,12 +171,26 @@ class _SignUpState extends State<SignUp> {
                     height: 10,
                   ),
                   Container(
-                    width: MediaQuery.of(context).size.width * 0.6,
+                    width: MediaQuery
+                        .of(context)
+                        .size
+                        .width * 0.6,
                     child: TextFormField(
                       keyboardType: TextInputType.text,
-                      obscureText: true,
+                      controller: confirmPasswordController,
+                      onSaved: (value) {
+                        confirmPasswordController.text = value!;
+                      },
+                      obscureText: _obscureText2,
                       decoration: InputDecoration(
-                        prefixIcon: Icon(Icons.lock),
+                        prefixIcon: IconButton(
+                          onPressed: () {
+                            hideConfirmPassword();
+                          },
+                          icon: Icon(_obscureText2
+                              ? Icons.visibility_off
+                              : Icons.visibility),
+                        ),
                         hintText: "Confirm Password",
                       ),
                     ),
@@ -114,14 +199,17 @@ class _SignUpState extends State<SignUp> {
                     height: 10,
                   ),
                   Container(
-                    width: MediaQuery.of(context).size.width * 0.6,
+                    width: MediaQuery
+                        .of(context)
+                        .size
+                        .width * 0.6,
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.pushNamed(context, '/homepage');
+                        signUpUser();
                       },
                       // onPressed: (){Navigator.push(context, MaterialPageRoute(builder: (context) => HomeScreen()));},
                       child: Text(
-                        "Login",
+                        "Sign Up",
                         style: TextStyle(
                           fontSize: 15,
                         ),
@@ -133,10 +221,10 @@ class _SignUpState extends State<SignUp> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      Fluttertoast.showToast(msg: 'Forgot Password Clicked!!');
+                      Get.back();
                     },
                     child: Text(
-                      'Forgot Password?',
+                      'Already have an account?',
                       style: TextStyle(),
                     ),
                   ),
@@ -147,6 +235,56 @@ class _SignUpState extends State<SignUp> {
         ),
       ),
     );
+  }
+
+  void signUpUser() async {
+    if (formKey.currentState!.validate()) {
+      try {
+        await firebaseAuth.createUserWithEmailAndPassword(
+            email: emailController.text, password: passwordController.text)
+            .then((value) => {toFirestore()})
+            .catchError((e) {
+          Fluttertoast.showToast(msg: e!.message);
+        });
+      }
+      on FirebaseAuthException catch (error) {
+        switch (error.code) {
+          case "invalid-email":
+            errorMessage = "Email is invalid";
+            break;
+
+          case "wrong-password":
+            errorMessage = "Password is Wrong";
+            break;
+
+          case "user-not-found":
+            errorMessage = "User does not exist";
+            break;
+
+          default:
+            errorMessage = "Undefined error";
+        }
+
+        Fluttertoast.showToast(msg: errorMessage!);
+
+      }
+    }
+  }
+
+  toFirestore() async{
+    FirebaseFirestore firebaseFirestore = FirebaseFirestore.instance;
+    User? user = firebaseAuth.currentUser;
+
+    UserModel userModel = UserModel();
+    userModel.name = nameController.text;
+    userModel.email = user!.email;
+    userModel.gender = selectedGender;
+    userModel.userUid = user!.uid;
+    userModel.imageUrl = imageUrl;
+
+    firebaseFirestore.collection("users").doc(user.uid).set(userModel.toMap());
+    Fluttertoast.showToast(msg: "Account created!!");
+    Navigator.pushAndRemoveUntil((context), MaterialPageRoute(builder: (context) => HomeScreen()), (route) => false);
   }
 
   Container UserImage(BuildContext context) {
@@ -163,6 +301,9 @@ class _SignUpState extends State<SignUp> {
             ),
             InkWell(
               borderRadius: BorderRadius.circular(120),
+              onTap: () {
+                showUserImageFilePicker(FileType.image);
+              },
               child: Container(
                 width: 120,
                 height: 120,
@@ -180,5 +321,20 @@ class _SignUpState extends State<SignUp> {
         ),
       ),
     );
+  }
+
+  showUserImageFilePicker(FileType fileType) async {
+    final picker = ImagePicker();
+    File _imageFile;
+    final pickFile = await picker.getImage(source: ImageSource.gallery);
+    _imageFile = File(pickFile!.path);
+    UploadTask uploadTask = firebaseStorage.ref('profileImage/').child(
+        DateTime.now().toString()).putFile(_imageFile);
+    var pictureUrl = await(await uploadTask).ref.getDownloadURL();
+    setState(() {
+      imageUrl = pictureUrl.toString();
+    });
+    print(imageUrl);
+    Fluttertoast.showToast(msg: 'Image uploaded');
   }
 }

@@ -2,6 +2,7 @@ import 'package:ems_login_signup/screens/homescreen.dart';
 import 'package:ems_login_signup/screens/signupscreen.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:get/get.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({Key? key}) : super(key: key);
@@ -64,7 +65,7 @@ class _SignInScreenState extends State<SignInScreen> {
                  Container(
                    width: MediaQuery.of(context).size.width * 0.6,
                    child: ElevatedButton(
-                     onPressed: (){Navigator.pushNamed(context, '/homepage');},
+                     onPressed: (){Get.to(() => HomeScreen());},
                      // onPressed: (){Navigator.push(context, MaterialPageRoute(builder: (context) => HomeScreen()));},
                      child: Text(
                        "Login",
