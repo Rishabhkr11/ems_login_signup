@@ -92,6 +92,14 @@ class _SignUpState extends State<SignUp> {
                         prefixIcon: Icon(Icons.person),
                         hintText: "Name",
                       ),
+                      validator: (value) {
+                        if (value!=null && value.isNotEmpty && value.length > 3){
+                          return null;
+                        }
+                        else{
+                          return 'Enter minimum 3 characters';
+                        }
+                      },
                     ),
                   ),
                   SizedBox(
@@ -112,6 +120,14 @@ class _SignUpState extends State<SignUp> {
                         prefixIcon: Icon(Icons.email_outlined),
                         hintText: "Email Address",
                       ),
+                      validator: (value) {
+                        if (value!=null && value.isNotEmpty){
+                          return null;
+                        }
+                        else{
+                          return 'Enter valid email';
+                        }
+                      },
                     ),
                   ),
                   SizedBox(
@@ -240,12 +256,17 @@ class _SignUpState extends State<SignUp> {
   void signUpUser() async {
     if (formKey.currentState!.validate()) {
       try {
-        await firebaseAuth.createUserWithEmailAndPassword(
-            email: emailController.text, password: passwordController.text)
-            .then((value) => {toFirestore()})
-            .catchError((e) {
-          Fluttertoast.showToast(msg: e!.message);
-        });
+       if(imageUrl == null){
+         Fluttertoast.showToast(msg: 'Select Image File!!');
+       }
+       else{
+         await firebaseAuth.createUserWithEmailAndPassword(
+             email: emailController.text, password: passwordController.text)
+             .then((value) => {toFirestore()})
+             .catchError((e) {
+           Fluttertoast.showToast(msg: e!.message);
+         });
+       }
       }
       on FirebaseAuthException catch (error) {
         switch (error.code) {
@@ -326,7 +347,7 @@ class _SignUpState extends State<SignUp> {
   showUserImageFilePicker(FileType fileType) async {
     final picker = ImagePicker();
     File _imageFile;
-    final pickFile = await picker.getImage(source: ImageSource.gallery);
+    final pickFile = await picker.pickImage(source: ImageSource.gallery);
     _imageFile = File(pickFile!.path);
     UploadTask uploadTask = firebaseStorage.ref('profileImage/').child(
         DateTime.now().toString()).putFile(_imageFile);
